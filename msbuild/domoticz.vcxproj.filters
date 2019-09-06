@@ -1415,6 +1415,7 @@
     <None Include="..\www\app\livesocket.js">
       <Filter>www\app</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webserver\Base64.h">
