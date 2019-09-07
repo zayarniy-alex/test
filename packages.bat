@@ -1,4 +1,4 @@
-set VCPKG_DEFAULT_TRIPLET=x64-windows-static
+set VCPKG_DEFAULT_TRIPLET=x64-windows
 vcpkg install zlib
 vcpkg install openssl
 vcpkg install pthreads
