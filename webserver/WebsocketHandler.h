@@ -4,7 +4,7 @@
 #include "reply.hpp"
 #include <boost/logic/tribool.hpp>
 #include "../push/WebsocketPush.h"
-#include "../../main/StoppableTask.h"
+#include "../main/StoppableTask.h"
 #include <thread>
 #include <mutex>
 #include <memory>
@@ -23,6 +23,7 @@ namespace http {
 			virtual void Start();
 			virtual void Stop();
 			virtual void OnDeviceChanged(const uint64_t DeviceRowIdx);
+			virtual void OnSceneChanged(const uint64_t SceneRowIdx);
 			virtual void SendNotification(const std::string& Subject, const std::string& Text, const std::string& ExtraData, const int Priority, const std::string& Sound, const bool bFromNotification);
 			virtual void store_session_id(const request &req, const reply &rep);
 		protected:

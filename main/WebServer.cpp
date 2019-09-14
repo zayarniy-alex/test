@@ -8685,6 +8685,7 @@ namespace http {
 								(!((dType == pTypeGeneral) && (dSubType == sTypeZWaveClock))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeZWaveThermostatMode))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeZWaveThermostatFanMode))) &&
+								(!((dType == pTypeGeneral) && (dSubType == sTypeZWaveThermostatOperatingState))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeDistance))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeCounterIncremental))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeManagedCounter))) &&
@@ -10751,6 +10752,26 @@ namespace http {
 							}
 							root["result"][ii]["Modes"] = modes;
 						}
+						else if (dSubType == sTypeZWaveThermostatOperatingState)
+						{
+							strcpy(szData, "");
+							root["result"][ii]["State"] = nValue;
+							root["result"][ii]["TypeImg"] = "Fan";
+							root["result"][ii]["HaveTimeout"] = bHaveTimeout;
+							if (nValue == 1)
+							{
+								sprintf(szData, "%s", "Cooling");
+							}
+							else if (nValue == 2)
+							{
+								sprintf(szData, "%s", "Heating");
+							}
+							else
+							{
+								sprintf(szData, "%s", "Idle");
+							}
+							root["result"][ii]["Data"] = szData;
+						}
 						else if (dSubType == sTypeZWaveAlarm)
 						{
 							sprintf(szData, "Event: 0x%02X (%d)", nValue, nValue);
@@ -11266,6 +11287,8 @@ namespace http {
 
 			std::string sLastUpdate = request::findValue(&req, "lastupdate");
 
+			std::string rid = request::findValue(&req, "rid");
+
 			time_t LastUpdate = 0;
 			if (sLastUpdate != "")
 			{
@@ -11283,7 +11306,11 @@ namespace http {
 			root["ActTime"] = static_cast<int>(now);
 
 			std::vector<std::vector<std::string> > result, result2;
-			result = m_sql.safe_query("SELECT ID, Name, Activators, Favorite, nValue, SceneType, LastUpdate, Protected, OnAction, OffAction, Description FROM Scenes ORDER BY [Order]");
+			std::string szQuery = "SELECT ID, Name, Activators, Favorite, nValue, SceneType, LastUpdate, Protected, OnAction, OffAction, Description FROM Scenes";
+			if (!rid.empty())
+				szQuery += " WHERE (ID == " + rid + ")";
+			szQuery += " ORDER BY [Order]";
+			result = m_sql.safe_query(szQuery.c_str());
 			if (!result.empty())
 			{
 				int ii = 0;

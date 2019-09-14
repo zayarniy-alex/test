@@ -21,8 +21,8 @@
 #define BUIENRADAR_RAIN "https://gadgets.buienradar.nl/data/raintext/?lat=" // + m_szMyLatitude + "&lon=" + m_szMyLongitude;
 
 #ifdef _DEBUG
-// #define DEBUG_BUIENRADARR
-// #define DEBUG_BUIENRADARW
+ #define DEBUG_BUIENRADARR
+ #define DEBUG_BUIENRADARW
 #endif
 
 #ifdef DEBUG_BUIENRADARW
@@ -92,7 +92,10 @@ CBuienRadar::~CBuienRadar(void)
 
 void CBuienRadar::Init()
 {
-	m_actDay = 0;
+	struct tm ltime;
+	time_t now = mytime(0);
+	localtime_r(&now, &ltime);
+	m_actDay = ltime.tm_mday;
 	m_lastRainCount = 0;
 }
 
@@ -131,17 +134,38 @@ void CBuienRadar::Do_Work()
 #endif
 	int sec_counter = 593;
 	_log.Log(LOG_STATUS, "BuienRadar: Worker started...");
+	bool bGetMeterDetails = true;
 
 	while (!IsStopRequested(1000))
 	{
 		sec_counter++;
 		if (sec_counter % 10 == 0) {
-			m_LastHeartbeat = mytime(NULL);
+			time_t now = mytime(0);
+
+			m_LastHeartbeat = now;
+
+			struct tm ltime;
+			localtime_r(&now, &ltime);
+			if (ltime.tm_mday != m_actDay)
+			{
+				if (ltime.tm_min >= m_sql.m_ShortLogInterval - 1)
+				{
+					//reset our rain counter
+					m_actDay = ltime.tm_mday;
+					m_lastRainCount = 0;
+
+					GetMeterDetails();
+					bGetMeterDetails = false;
+				}
+			}
 		}
+
 		if (sec_counter % 600 == 0)
 		{
 			//Every 10 minutes
-			GetMeterDetails();
+			if (bGetMeterDetails)
+				GetMeterDetails();
+			bGetMeterDetails = true;
 		}
 		if (sec_counter % 300 == 0)
 		{
@@ -301,7 +325,7 @@ void CBuienRadar::GetMeterDetails()
 		return;
 	}
 
-	if (root["stationid"].empty() == true)
+	if (root["timestamp"].empty() == true || root["stationid"].empty() == true)
 	{
 		_log.Log(LOG_ERROR, "BuienRadar: Invalid data received, or no data returned!");
 		return;
@@ -320,6 +344,11 @@ void CBuienRadar::GetMeterDetails()
 	}
 
 	//timestamp : "2019-08-22T08:30:00"
+	std::string szTimeStamp = root["timestamp"].asString();
+	int stampDay = std::stoi(szTimeStamp.substr(8, 2));
+	if (stampDay != m_actDay)
+		return;
+
 	//iconurl : "https://www.buienradar.nl/resources/images/icons/weather/30x30/a.png"
 	//graphUrl : "https://www.buienradar.nl/nederland/weerbericht/weergrafieken/a"
 
@@ -434,17 +463,6 @@ void CBuienRadar::GetMeterDetails()
 	if (total_rain_today != -1)
 	{
 		//Make sure the 24 hour counter does not loop when our day is not finished yet (clocks could drift a few seconds/minutes)
-		time_t now = mytime(0);
-		struct tm ltime;
-		localtime_r(&now, &ltime);
-		
-		if (ltime.tm_mday != m_actDay)
-		{
-			//New day, reset our counter
-			m_actDay = ltime.tm_mday;
-			m_lastRainCount = 0;
-		}
-		
 		if (total_rain_today >= m_lastRainCount)
 		{
 			m_lastRainCount = total_rain_today;
