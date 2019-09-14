@@ -1439,6 +1439,7 @@
     <None Include="..\www\views\weather_widget.html">
       <Filter>www\views</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webserver\Base64.h">
