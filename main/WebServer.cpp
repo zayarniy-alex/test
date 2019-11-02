@@ -353,7 +353,7 @@ namespace http {
 			m_pWebEm->RegisterPageCode("/uvccapture.cgi", boost::bind(&CWebServer::GetInternalCameraSnapshot, this, _1, _2, _3));
 			m_pWebEm->RegisterPageCode("/images/floorplans/plan", boost::bind(&CWebServer::GetFloorplanImage, this, _1, _2, _3));
 
-			m_pWebEm->RegisterActionCode("storesettings", boost::bind(&CWebServer::PostSettings, this, _1, _2, _3));
+			m_pWebEm->RegisterPageCode("/storesettings", boost::bind(&CWebServer::PostSettings, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("setrfxcommode", boost::bind(&CWebServer::SetRFXCOMMode, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("rfxupgradefirmware", boost::bind(&CWebServer::RFXComUpgradeFirmware, this, _1, _2, _3));
 			RegisterCommandCode("rfxfirmwaregetpercentage", boost::bind(&CWebServer::Cmd_RFXComGetFirmwarePercentage, this, _1, _2, _3), true);
@@ -379,6 +379,8 @@ namespace http {
 			RegisterCommandCode("gettitle", boost::bind(&CWebServer::Cmd_GetTitle, this, _1, _2, _3), true);
 
 			RegisterCommandCode("logincheck", boost::bind(&CWebServer::Cmd_LoginCheck, this, _1, _2, _3), true);
+			m_pWebEm->RegisterPageCode("/logincheck", boost::bind(&CWebServer::PostLoginCheck, this, _1, _2, _3), true);
+
 			RegisterCommandCode("getversion", boost::bind(&CWebServer::Cmd_GetVersion, this, _1, _2, _3), true);
 			RegisterCommandCode("getlog", boost::bind(&CWebServer::Cmd_GetLog, this, _1, _2, _3));
 			RegisterCommandCode("clearlog", boost::bind(&CWebServer::Cmd_ClearLog, this, _1, _2, _3));
@@ -916,6 +918,20 @@ namespace http {
 				root["Title"] = sValue;
 			else
 				root["Title"] = "Domoticz";
+		}
+
+		//PostSettings
+		void CWebServer::PostLoginCheck(WebEmSession& session, const request& req, reply& rep)
+		{
+			Json::Value root;
+			Cmd_LoginCheck(session, req, root);
+
+			std::string jcallback = request::findValue(&req, "jsoncallback");
+			if (jcallback.size() == 0) {
+				reply::set_content(&rep, root.toStyledString());
+				return;
+			}
+			reply::set_content(&rep, "var data=" + root.toStyledString() + '\n' + jcallback + "(data);");
 		}
 
 		void CWebServer::Cmd_LoginCheck(WebEmSession & session, const request& req, Json::Value &root)
@@ -2205,7 +2221,7 @@ namespace http {
 				std::vector<std::string> sd = result[0];
 				int ID = atoi(sd[0].c_str());
 
-				root["idx"] = sd[0].c_str(); // OTO output the created ID for easier management on the caller side (if automated)
+				root["idx"] = ID; // OTO output the created ID for easier management on the caller side (if automated)
 			}
 		}
 
@@ -2719,17 +2735,16 @@ namespace http {
 			root["title"] = "GetConfig";
 
 			bool bHaveUser = (session.username != "");
-			int urights = 3;
+			//int urights = 3;
 			unsigned long UserID = 0;
 			if (bHaveUser)
 			{
 				int iUser = FindUser(session.username.c_str());
 				if (iUser != -1)
 				{
-					urights = static_cast<int>(m_users[iUser].userrights);
+					//urights = static_cast<int>(m_users[iUser].userrights);
 					UserID = m_users[iUser].ID;
 				}
-
 			}
 
 			int nValue;
@@ -2963,7 +2978,7 @@ namespace http {
 			int devType = atoi(dtype.c_str());
 			int subType = atoi(dsubtype.c_str());
 
-			uint64_t ulIdx = std::strtoull(idx.c_str(), nullptr, 10);
+			//uint64_t ulIdx = std::strtoull(idx.c_str(), nullptr, 10);
 
 			int invalue = atoi(nvalue.c_str());
 
@@ -3195,8 +3210,8 @@ namespace http {
 					unsigned long long powerusage2 = std::strtoull(splitresults[1].c_str(), nullptr, 10);
 					unsigned long long powerdeliv1 = std::strtoull(splitresults[2].c_str(), nullptr, 10);
 					unsigned long long powerdeliv2 = std::strtoull(splitresults[3].c_str(), nullptr, 10);
-					unsigned long long usagecurrent = std::strtoull(splitresults[4].c_str(), nullptr, 10);
-					unsigned long long delivcurrent = std::strtoull(splitresults[5].c_str(), nullptr, 10);
+					//unsigned long long usagecurrent = std::strtoull(splitresults[4].c_str(), nullptr, 10);
+					//unsigned long long delivcurrent = std::strtoull(splitresults[5].c_str(), nullptr, 10);
 
 					powerdeliv1 = (powerdeliv1 < 10) ? 0 : powerdeliv1;
 					powerdeliv2 = (powerdeliv2 < 10) ? 0 : powerdeliv2;
@@ -3317,12 +3332,13 @@ namespace http {
 			char szTmp[300];
 
 			bool bHaveUser = (session.username != "");
+/*
 			int iUser = -1;
 			if (bHaveUser)
 			{
 				iUser = FindUser(session.username.c_str());
 			}
-
+*/
 			if (cparam == "deleteallsubdevices")
 			{
 				if (session.rights < 2)
@@ -3425,7 +3441,7 @@ namespace http {
 				result = m_sql.safe_query("SELECT Activators, SceneType FROM Scenes WHERE (ID=='%q')", idx.c_str());
 				if (!result.empty())
 				{
-					int SceneType = atoi(result[0][1].c_str());
+					//int SceneType = atoi(result[0][1].c_str());
 
 					std::vector<std::string> arrayActivators;
 					StringSplit(result[0][0], ";", arrayActivators);
@@ -3616,7 +3632,7 @@ namespace http {
 							switchtype = STYPE_OnOff;
 
 						unsigned char subType = atoi(sd[4].c_str());
-						unsigned char nValue = (unsigned char)atoi(sd[5].c_str());
+						//unsigned char nValue = (unsigned char)atoi(sd[5].c_str());
 						std::string sValue = sd[6];
 						int command = atoi(sd[7].c_str());
 						int level = atoi(sd[8].c_str());
@@ -3860,7 +3876,7 @@ namespace http {
 							if (!used)
 							{
 								bdoAdd = false;
-								bool bIsSubDevice = false;
+								//bool bIsSubDevice = false;
 								std::vector<std::vector<std::string> > resultSD;
 								resultSD = m_sql.safe_query("SELECT ID FROM LightSubDevices WHERE (DeviceRowID=='%q')",
 									sd[0].c_str());
@@ -7533,7 +7549,6 @@ namespace http {
 						result = m_sql.safe_query("SELECT ID, Active, Username, Password, Rights, TabsEnabled FROM Users");
 						if (!result.empty())
 						{
-							int ii = 0;
 							for (const auto & itt : result)
 							{
 								std::vector<std::string> sd = itt;
@@ -7605,10 +7620,8 @@ namespace http {
 			return false;
 		}
 
-		void CWebServer::PostSettings(WebEmSession & session, const request& req, std::string & redirect_uri)
+		void CWebServer::PostSettings(WebEmSession& session, const request& req, reply& rep)
 		{
-			redirect_uri = "/index.html";
-
 			if (session.rights != 2)
 			{
 				session.reply_status = reply::forbidden;
@@ -7998,6 +8011,18 @@ namespace http {
 			//Signal plugins to update Settings dictionary
 			PluginLoadConfig();
 #endif
+
+			Json::Value root;
+			root["status"] = "OK";
+			root["title"] = "StoreSettings";
+
+			std::string jcallback = request::findValue(&req, "jsoncallback");
+			if (jcallback.size() == 0) {
+				reply::set_content(&rep, root.toStyledString());
+				return;
+			}
+			reply::set_content(&rep, "var data=" + root.toStyledString() + '\n' + jcallback + "(data);");
+
 		}
 
 		void CWebServer::RestoreDatabase(WebEmSession & session, const request& req, std::string & redirect_uri)
@@ -8062,7 +8087,6 @@ namespace http {
 			result = m_sql.safe_query("SELECT ID, Name, Enabled, Type, Mode1, Mode2 FROM Hardware");
 			if (!result.empty())
 			{
-				int ii = 0;
 				for (const auto & itt : result)
 				{
 					std::vector<std::string> sd = itt;
@@ -12262,8 +12286,9 @@ namespace http {
 			{
 				int dType = atoi(result[0][0].c_str());
 				if (
-					(dType == pTypeTEMP) ||
-					(dType == pTypeTEMP_HUM)
+					(dType == pTypeTEMP)
+					|| (dType == pTypeTEMP_HUM)
+					|| (dType == pTypeTEMP_HUM_BARO)
 					)
 				{
 					result = m_sql.safe_query(
@@ -12276,6 +12301,8 @@ namespace http {
 						"SELECT ID, Name FROM DeviceStatus WHERE (Type=='%q') AND (SubType=='%q') AND (ID!=%" PRIu64 ")",
 						result[0][0].c_str(), result[0][1].c_str(), idx);
 				}
+
+				std::sort(std::begin(result), std::end(result), [](std::vector<std::string> a, std::vector<std::string> b) {return a[1] < b[1]; });
 
 				int ii = 0;
 				for (const auto & itt : result)
@@ -12476,10 +12503,10 @@ namespace http {
 			char szTmp[200];
 
 			bool bHaveUser = (session.username != "");
-			int iUser = -1;
+			//int iUser = -1;
 			if (bHaveUser)
 			{
-				iUser = FindUser(session.username.c_str());
+				//iUser = FindUser(session.username.c_str());
 			}
 
 			int switchtype = -1;
@@ -13620,7 +13647,10 @@ namespace http {
 							long long lastUsage1, lastUsage2, lastDeliv1, lastDeliv2;
 							time_t lastTime = 0;
 
-							long long firstUsage1, firstUsage2, firstDeliv1, firstDeliv2;
+							long long firstUsage1 = 0;
+							long long firstUsage2 = 0;
+							long long firstDeliv1 = 0;
+							long long firstDeliv2 = 0;
 
 							int nMeterType = 0;
 							m_sql.GetPreferencesVar("SmartMeterType", nMeterType);
@@ -14108,12 +14138,10 @@ namespace http {
 						root["method"] = method;
 						bool bHaveFirstValue = false;
 						bool bHaveFirstRealValue = false;
-						float FirstValue = 0;
 						long long ulFirstRealValue = 0;
 						long long ulFirstValue = 0;
 						long long ulLastValue = 0;
 						std::string LastDateTime = "";
-						time_t lastTime = 0;
 
 						if (!result.empty())
 						{
@@ -14229,8 +14257,6 @@ namespace http {
 
 						bool bHaveFirstValue = false;
 						bool bHaveFirstRealValue = false;
-						float FirstValue = 0;
-						unsigned long long ulFirstRealValue = 0;
 						unsigned long long ulFirstValue = 0;
 						unsigned long long ulLastValue = 0;
 
@@ -14626,7 +14652,7 @@ namespace http {
 								gustOrg = speedOrg;
 							if (gustOrg == 0)
 								continue; //no direction if wind is still
-							float speed = speedOrg * m_sql.m_windscale;
+							//float speed = speedOrg * m_sql.m_windscale;
 							float gust = gustOrg * m_sql.m_windscale;
 							int bucket = int(fdirection / 22.5f);
 
@@ -14786,7 +14812,7 @@ namespace http {
 
 						float total_min = static_cast<float>(atof(sd[0].c_str()));
 						float total_max = static_cast<float>(atof(sd[1].c_str()));
-						int rate = atoi(sd[2].c_str());
+						//int rate = atoi(sd[2].c_str());
 
 						double total_real = 0;
 						if (dSubType == sTypeRAINWU || dSubType == sTypeRAINByRate)
@@ -15484,7 +15510,7 @@ namespace http {
 
 						float total_min = static_cast<float>(atof(sd[0].c_str()));
 						float total_max = static_cast<float>(atof(sd[1].c_str()));
-						int rate = atoi(sd[2].c_str());
+						//int rate = atoi(sd[2].c_str());
 
 						double total_real = 0;
 						if (dSubType == sTypeRAINWU || dSubType == sTypeRAINByRate)
@@ -15526,7 +15552,7 @@ namespace http {
 					root["ValueQuantity"] = options["ValueQuantity"];
 					root["ValueUnits"] = options["ValueUnits"];
 
-					int nValue = 0;
+					//int nValue = 0;
 					std::string sValue = "";
 
 					result = m_sql.safe_query("SELECT nValue, sValue FROM DeviceStatus WHERE (ID==%" PRIu64 ")",
@@ -15534,7 +15560,7 @@ namespace http {
 					if (!result.empty())
 					{
 						std::vector<std::string> sd = result[0];
-						nValue = atoi(sd[0].c_str());
+						//nValue = atoi(sd[0].c_str());
 						sValue = sd[1];
 					}
 
@@ -16974,7 +17000,7 @@ namespace http {
 
 						float total_min = static_cast<float>(atof(sd[0].c_str()));
 						float total_max = static_cast<float>(atof(sd[1].c_str()));
-						int rate = atoi(sd[2].c_str());
+						//int rate = atoi(sd[2].c_str());
 
 						float total_real = 0;
 						if (dSubType == sTypeRAINWU || dSubType == sTypeRAINByRate)
@@ -17253,7 +17279,7 @@ namespace http {
 					session.auth_token = result[0][2].c_str();
 
 					std::string sExpirationDate = result[0][3];
-					time_t now = mytime(NULL);
+					//time_t now = mytime(NULL);
 					struct tm tExpirationDate;
 					ParseSQLdatetime(session.expires, tExpirationDate, sExpirationDate);
 					// RemoteHost is not used to restore the session
