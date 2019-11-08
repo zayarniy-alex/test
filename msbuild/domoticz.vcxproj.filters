@@ -1451,6 +1451,7 @@
     <None Include="..\www\app\devices\Devices.js">
       <Filter>www\app\devices</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\webserver\Base64.h">
