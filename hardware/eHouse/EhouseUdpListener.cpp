@@ -13,7 +13,7 @@
  */
 
 #include "stdafx.h"
-#include "../main/Logger.h"
+#include "../../main/Logger.h"
 #include "globals.h"
 #include "status.h"
 

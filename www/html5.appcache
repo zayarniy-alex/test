@@ -210,6 +210,7 @@ images/Light48_Off.png
 images/Light48_On.png
 images/lightbulb.png
 images/lightbulboff.png
+images/location.png
 images/lock_closed.png
 images/lock_open.png
 images/log.png
@@ -592,6 +593,7 @@ app/TemperatureController.js
 app/TemperatureCustomLogController.js
 app/TimerplanController.js
 app/UpdateController.js
+app/UpdateController2.js
 app/UsersController.js
 app/UserVariablesController.js
 app/UtilityController.js
@@ -707,6 +709,7 @@ views/temperature_custom_temp_log.html
 views/timerplan.html
 views/timers.html
 views/update.html
+views/update2.html
 views/users.html
 views/utility.html
 views/weather.html

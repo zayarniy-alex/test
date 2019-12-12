@@ -8,7 +8,7 @@
 #include "../main/SQLHelper.h"
 #include "../httpclient/HTTPClient.h"
 #include "../main/mainworker.h"
-#include "../json/json.h"
+#include "../main/json_helper.h"
 
 #define round(a) ( int ) ( a + .5 )
 
@@ -18,7 +18,7 @@ const std::string NEST_SET_SHARED = "/v2/put/shared.";
 const std::string NEST_SET_STRUCTURE = "/v2/put/structure.";
 const std::string NEST_SET_DEVICE = "/v2/put/device.";
 
-#define NEST_USER_AGENT_STRING "User-Agent: Nest/3.0.1.15 (iOS) os=6.0"
+#define NEST_USER_AGENT_STRING "User-Agent: Nest/3.0.1.15"
 
 #ifdef _DEBUG
 	//#define DEBUG_NextThermostatR
@@ -209,8 +209,7 @@ bool CNest::Login()
 	}
 
 	Json::Value root;
-	Json::Reader jReader;
-	bool bRet = jReader.parse(sResult, root);
+	bool bRet = ParseJSon(sResult, root);
 	if ((!bRet) || (!root.isObject()))
 	{
 		_log.Log(LOG_ERROR, "Nest: Invalid data received, or invalid username/password!");
@@ -400,8 +399,7 @@ void CNest::GetMeterDetails()
 #endif
 
 	Json::Value root;
-	Json::Reader jReader;
-	bool bRet = jReader.parse(sResult, root);
+	bool bRet = ParseJSon(sResult, root);
 	if ((!bRet) || (!root.isObject()))
 	{
 		_log.Log(LOG_ERROR, "Nest: Invalid data received!");

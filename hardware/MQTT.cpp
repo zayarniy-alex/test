@@ -6,7 +6,7 @@
 #include "../main/localtime_r.h"
 #include "../main/mainworker.h"
 #include "../main/SQLHelper.h"
-#include "../json/json.h"
+#include "../main/json_helper.h"
 #include "../notifications/NotificationHelper.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -25,16 +25,17 @@ const char* szTLSVersions[3] =
 	"tlsv1.2"
 };
 
-MQTT::MQTT(const int ID, const std::string &IPAddress, const unsigned short usIPPort, const std::string &Username, const std::string &Password, const std::string &CAfilename, const int TLS_Version, const int Topics) :
+MQTT::MQTT(const int ID, const std::string &IPAddress, const unsigned short usIPPort, const std::string &Username, const std::string &Password, const std::string &CAfilename, const int TLS_Version, const int Topics, const std::string& MQTTClientID) :
 m_szIPAddress(IPAddress),
 m_UserName(Username),
 m_Password(Password),
-m_CAFilename(CAfilename)
+m_CAFilename(CAfilename),
+mosqdz::mosquittodz(MQTTClientID.c_str())
 {
 	m_HwdID=ID;
 	m_IsConnected = false;
 	m_bDoReconnect = false;
-	mosqpp::lib_init();
+	mosqdz::lib_init();
 
 	m_usIPPort=usIPPort;
 	m_publish_topics = (_ePublishTopics)Topics;
@@ -42,11 +43,13 @@ m_CAFilename(CAfilename)
 	m_TopicOut = TOPIC_OUT;
 
 	m_TLS_Version = (TLS_Version < 3) ? TLS_Version : 0; //see szTLSVersions
+
+	threaded_set(true);
 }
 
 MQTT::~MQTT(void)
 {
-	mosqpp::lib_cleanup();
+	mosqdz::lib_cleanup();
 }
 
 bool MQTT::StartHardware()
@@ -152,14 +155,13 @@ void MQTT::on_message(const struct mosquitto_message *message)
 		return;
 
 	Json::Value root;
-	Json::Reader jReader;
 	std::string szCommand = "udevice";
 
 	std::vector<std::vector<std::string> > result;
 	
 	uint64_t idx = 0;
 
-	bool ret = jReader.parse(qMessage, root);
+	bool ret = ParseJSon(qMessage, root);
 	if ((!ret) || (!root.isObject()))
 		goto mqttinvaliddata;
 	try
@@ -504,7 +506,7 @@ bool MQTT::ConnectIntEx()
 	_log.Log(LOG_STATUS, "MQTT: Connecting to %s:%d", m_szIPAddress.c_str(), m_usIPPort);
 
 	int rc;
-	int keepalive = 60;
+	int keepalive = 40;
 
 	if (!m_CAFilename.empty()){
 		rc = tls_opts_set(SSL_VERIFY_PEER, szTLSVersions[m_TLS_Version], NULL);
@@ -540,16 +542,29 @@ void MQTT::Do_Work()
 	{
 		if (!bFirstTime)
 		{
-			int rc = loop();
-			if (rc) {
-				if (rc != MOSQ_ERR_NO_CONN)
-				{
-					if (!IsStopRequested(0))
+			try
+			{
+				int rc = loop();
+				if (rc) {
+					if (rc != MOSQ_ERR_NO_CONN)
 					{
-						if (!m_bDoReconnect)
+						if (!IsStopRequested(0))
 						{
-							reconnect();
+							if (!m_bDoReconnect)
+							{
+								reconnect();
+							}
 						}
+					}
+				}
+			}
+			catch (const std::exception&)
+			{
+				if (!IsStopRequested(0))
+				{
+					if (!m_bDoReconnect)
+					{
+						reconnect();
 					}
 				}
 			}
@@ -585,6 +600,11 @@ void MQTT::Do_Work()
 			}
 		}
 	}
+	clear_callbacks();
+
+	if (isConnected())
+		disconnect();
+
 	if (m_sDeviceReceivedConnection.connected())
 		m_sDeviceReceivedConnection.disconnect();
 	if (m_sSwitchSceneConnection.connected())
@@ -628,28 +648,31 @@ void MQTT::SendDeviceInfo(const int HwdID, const uint64_t DeviceRowIdx, const st
 	if (!m_IsConnected)
 		return;
 	std::vector<std::vector<std::string> > result;
-	result = m_sql.safe_query("SELECT DeviceID, Unit, Name, [Type], SubType, nValue, sValue, SwitchType, SignalLevel, BatteryLevel, Options, Description, LastLevel, Color FROM DeviceStatus WHERE (HardwareID==%d) AND (ID==%" PRIu64 ")", HwdID, DeviceRowIdx);
+	result = m_sql.safe_query("SELECT HardwareID, DeviceID, Unit, Name, [Type], SubType, nValue, sValue, SwitchType, SignalLevel, BatteryLevel, Options, Description, LastLevel, Color FROM DeviceStatus WHERE (HardwareID==%d) AND (ID==%" PRIu64 ")", HwdID, DeviceRowIdx);
 	if (!result.empty())
 	{
+		int iIndex = 0;
 		std::vector<std::string> sd = result[0];
-		std::string did = sd[0];
-		int dunit = atoi(sd[1].c_str());
-		std::string name = sd[2];
-		int dType = atoi(sd[3].c_str());
-		int dSubType = atoi(sd[4].c_str());
-		int nvalue = atoi(sd[5].c_str());
-		std::string svalue = sd[6];
-		_eSwitchType switchType = (_eSwitchType)atoi(sd[7].c_str());
-		int RSSI = atoi(sd[8].c_str());
-		int BatteryLevel = atoi(sd[9].c_str());
-		std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sd[10]);
-		std::string description = sd[11];
-		int LastLevel = atoi(sd[12].c_str());
-		std::string sColor = sd[13];
+		std::string hwid = sd[iIndex++];
+		std::string did = sd[iIndex++];
+		int dunit = atoi(sd[iIndex++].c_str());
+		std::string name = sd[iIndex++];
+		int dType = atoi(sd[iIndex++].c_str());
+		int dSubType = atoi(sd[iIndex++].c_str());
+		int nvalue = atoi(sd[iIndex++].c_str());
+		std::string svalue = sd[iIndex++];
+		_eSwitchType switchType = (_eSwitchType)atoi(sd[iIndex++].c_str());
+		int RSSI = atoi(sd[iIndex++].c_str());
+		int BatteryLevel = atoi(sd[iIndex++].c_str());
+		std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sd[iIndex++]);
+		std::string description = sd[iIndex++];
+		int LastLevel = atoi(sd[iIndex++].c_str());
+		std::string sColor = sd[iIndex++];
 
 		Json::Value root;
 
 		root["idx"] = DeviceRowIdx;
+		root["hwid"] = hwid;
 		root["id"] = did;
 		root["unit"] = dunit;
 		root["name"] = name;

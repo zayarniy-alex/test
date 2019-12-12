@@ -1164,9 +1164,10 @@ bool COpenZWave::SwitchLight(_tZWaveDevice* pDevice, const int instanceID, const
 		}
 
 		if (
-			((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0003)) ||
-			((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0103)) ||
-			((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0203))
+			((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0003))
+			|| ((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0103))
+			|| ((pDevice->Product_id == 0x0060) && (pDevice->Product_type == 0x0203))
+			|| ((pDevice->Product_id == 0x00af) && (pDevice->Product_type == 0x0003))
 			)
 		{
 			//Special case for the Aeotec Smart Switch
@@ -1974,6 +1975,7 @@ void COpenZWave::AddValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 		}
 		else if (
 			(vOrgIndex == ValueID_Index_SensorMultiLevel::Carbon_Dioxide)
+			|| (vOrgIndex == ValueID_Index_SensorMultiLevel::Volatile_Organic_Compound)
 			|| (vOrgIndex == ValueID_Index_SensorMultiLevel::Carbon_Monoxide)
 			)
 		{
@@ -1987,6 +1989,10 @@ void COpenZWave::AddValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 		{
 			_device.devType = ZDTYPE_SENSOR_TANK_CAPACITY;
 		}
+		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::Loudness)
+		{
+			_device.devType = ZDTYPE_SENSOR_LOUDNESS;
+		}
 		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::General_Purpose)
 		{
 			_device.devType = ZDTYPE_SWITCH_NORMAL;
@@ -1996,7 +2002,17 @@ void COpenZWave::AddValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 			_device.custom_label = "mm/h";
 			_device.devType = ZDTYPE_SENSOR_CUSTOM;
 		}
+		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::Particulate_Mater_2_5)
+		{
+			//dust
+			_device.custom_label = "ug/m3";
+			_device.devType = ZDTYPE_SENSOR_CUSTOM;
+		}
 		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::Seismic_Intensity)
+		{
+			_device.devType = ZDTYPE_SENSOR_PERCENTAGE;
+		}
+		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::Smoke_Density)
 		{
 			_device.devType = ZDTYPE_SENSOR_PERCENTAGE;
 		}
@@ -2010,9 +2026,15 @@ void COpenZWave::AddValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 			_device.custom_label = "m/s2";
 			_device.devType = ZDTYPE_SENSOR_CUSTOM;
 		}
+		else if (vOrgIndex == ValueID_Index_SensorMultiLevel::Frequency)
+		{
+			_device.custom_label = "Hz";
+			_device.devType = ZDTYPE_SENSOR_CUSTOM;
+		}
 		else
 		{
 			_log.Log(LOG_STATUS, "OpenZWave: Value_Added: Unhandled Label: %s, Unit: %s, Node: %d (0x%02x), CommandClass: %s, Label: %s, Instance: %d, Index: %d", vLabel.c_str(), vUnits.c_str(), static_cast<int>(NodeID), static_cast<int>(NodeID), cclassStr(commandclass), vLabel.c_str(), vOrgInstance, vOrgIndex);
+			return;
 		}
 		_device.floatValue = fValue * _device.scaleMultiply;
 		InsertDevice(_device);
@@ -3310,6 +3332,13 @@ void COpenZWave::UpdateValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 	}
 	break;
 	case ZDTYPE_SENSOR_TANK_CAPACITY:
+	{
+		if (vType != OpenZWave::ValueID::ValueType_Decimal)
+			return;
+		pDevice->floatValue = fValue;
+	}
+	break;
+	case ZDTYPE_SENSOR_LOUDNESS:
 	{
 		if (vType != OpenZWave::ValueID::ValueType_Decimal)
 			return;
