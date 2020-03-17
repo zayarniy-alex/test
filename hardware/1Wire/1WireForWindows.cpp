@@ -5,10 +5,7 @@
 #include "../../main/json_helper.h"
 #include "../../main/Logger.h"
 #include <boost/optional.hpp>
-<<<<<<< HEAD
 #include "../../main/json_helper.h"
-=======
->>>>>>> development
 #include <WS2tcpip.h>
 
 #define _1WIRE_SERVICE_PORT "1664"
