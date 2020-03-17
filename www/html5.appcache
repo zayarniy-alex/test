@@ -381,6 +381,7 @@ images/evohome/DayOffInv.png
 images/evohome/HeatingOff.png
 images/evohome/HeatingOffInv.png
 images/evohome/Off.png
+images/evohome/Offline.png
 images/evohome/On.png
 images/evohome/OpenWindow.png
 images/evohome/PermanentOverride.png
@@ -540,6 +541,9 @@ app/notifications/constants.js
 app/notifications/DeviceNotifications.js
 app/notifications/factories.js
 
+app/plans/RoomPlans.html
+app/plans/RoomPlans.js
+
 app/report/CounterReport.html
 app/report/CounterReport.js
 app/report/DeviceReport.html
@@ -559,6 +563,7 @@ app/timers/SceneTimersController.js
 
 app/AboutController.js
 app/app.js
+app/app.notifications.js
 app/app.constants.js
 app/app.permissions.js
 app/app.routes.js
@@ -586,7 +591,6 @@ app/main.js
 app/NotificationController.js
 app/OfflineController.js
 app/RestoreDatabaseController.js
-app/RoomplanController.js
 app/ScenesController.js
 app/SetupController.js
 app/TemperatureController.js
@@ -700,7 +704,6 @@ views/notification.html
 views/notifications.html
 views/offline.html
 views/restoredatabase.html
-views/roomplan.html
 views/scenes.html
 views/setup.html
 views/temperature.html

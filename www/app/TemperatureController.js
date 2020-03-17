@@ -1,26 +1,14 @@
 define(['app', 'livesocket'], function (app) {
-	app.controller('TemperatureController', function ($scope, $rootScope, $location, $http, $interval, $window, $route, $routeParams, permissions, livesocket) {
+	app.controller('TemperatureController', function ($scope, $rootScope, $location, $http, $interval, $window, $route, $routeParams, deviceApi, permissions, livesocket) {
 		var $element = $('#main-view #tempcontent').last();
 
 		var ctrl = this;
 
-		$scope.broadcast_unsubscribe = undefined;
-
 		MakeFavorite = function (id, isfavorite) {
-			if (!permissions.hasPermission("Admin")) {
-				HideNotify();
-				ShowNotify($.t('You do not have permission to do that!'), 2500, true);
-				return;
-			}
-			$.ajax({
-				url: "json.htm?type=command&param=makefavorite&idx=" + id + "&isfavorite=" + isfavorite,
-				async: false,
-				dataType: 'json',
-				success: function (data) {
-					ShowTemps();
-				}
+			deviceApi.makeFavorite(id, isfavorite).then(function() {
+				ShowTemps();
 			});
-		}
+		};
 
 		EditTempDevice = function (idx, name, description, addjvalue) {
 			$.devIdx = idx;
@@ -138,20 +126,6 @@ define(['app', 'livesocket'], function (app) {
 					});
 				}
 			});
-
-			$scope.broadcast_unsubscribe = $scope.$on('jsonupdate', function (event, data) {
-				/*
-					When this event is caught, a widget status update is received.
-					We call RefreshItem to update the widget.
-				*/
-				if (typeof data.ServerTime != 'undefined') {
-					$rootScope.SetTimeAndSun(data.Sunrise, data.Sunset, data.ServerTime);
-				}
-				if (typeof data.ActTime != 'undefined') {
-					$.LastUpdateTime = parseInt(data.ActTime);
-				}
-				RefreshItem(data.item);
-			});
 		}
 
 		ShowForecast = function () {
@@ -160,11 +134,6 @@ define(['app', 'livesocket'], function (app) {
 
 		ShowTemps = function () {
 			$('#modal').show();
-
-			if (typeof $scope.broadcast_unsubscribe != 'undefined') {
-				$scope.broadcast_unsubscribe();
-				$scope.broadcast_unsubscribe = undefined;
-			}
 
 			// TODO should belong to a global controller
 			ctrl.isNotMobile = function () {
@@ -228,6 +197,10 @@ define(['app', 'livesocket'], function (app) {
 			$.LastUpdateTime = parseInt(0);
 
 			$scope.MakeGlobalConfig();
+
+			$scope.$on('device_update', function (event, deviceData) {
+				RefreshItem(deviceData);
+			});
 
 			var dialog_edittempdevice_buttons = {};
 			dialog_edittempdevice_buttons[$.t("Update")] = function () {
@@ -492,13 +465,6 @@ define(['app', 'livesocket'], function (app) {
 
 
 		};
-		$scope.$on('$destroy', function () {
-			//cleanup
-			if (typeof $scope.broadcast_unsubscribe != 'undefined') {
-				$scope.broadcast_unsubscribe();
-				$scope.broadcast_unsubscribe = undefined;
-			}
-		});
 
 		ctrl.RoomPlans = [{ idx: 0, name: $.t("All") }];
 		$.ajax({

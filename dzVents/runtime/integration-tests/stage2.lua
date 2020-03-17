@@ -773,14 +773,14 @@ local testCancelledScene = function(name)
 	local res = true
 	local count = dz.globalData.cancelledScene
 	res = res and expectEql(2, count)
-	handleResult('Test cancelled repeat scene', res)
+	handleResult('Test cancelled repeat scene' .. dz.globalData.cancelledScene, res)
 	return res
 end
 
 local testHTTPSwitch = function(name)
 	local res = true
 	local trigger = dz.globalData.httpTrigger
-	res = res and expectEql('OKOKOK', trigger)
+	res = res and expectEql('OKOKOKOK', trigger)
 	handleResult('Test http trigger switch device', res)
 	return res
 end

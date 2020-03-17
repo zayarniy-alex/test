@@ -53,6 +53,22 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CXX_EXTENSIONS NO)
 endif()
 
+IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-parentheses-equality -Wno-deprecated-declarations -Wno-tautological-compare -Wno-unused-value -Wno-comment -Wno-unsequenced -Wno-logical-op-parentheses -Wno-literal-conversion")
+ENDIF()
+IF(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+ENDIF()
+IF(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+ENDIF()
+IF(CMAKE_COMPILER_IS_GNUCXX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-psabi")
+  #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-switch")
+  #ADD_DEFINITIONS( -Wall -O0 -ggdb )
+  #ADD_DEFINITIONS( -Wfatal-errors -Wformat=2 -Werror=format-security )
+ENDIF()
+
 option(USE_OPENSSL_STATIC "Link OpenSSL static" YES)
 IF(USE_OPENSSL_STATIC)
 	set(OPENSSL_USE_STATIC_LIBS TRUE)
@@ -126,6 +142,28 @@ ELSE(USE_BUILTIN_SQLITE)
   ENDIF(SQLite_FOUND)
 ENDIF(USE_BUILTIN_SQLITE)
 
+option(USE_BUILTIN_JSONCPP "Use builtin JSonCPP" YES)
+IF(USE_BUILTIN_JSONCPP)
+  MESSAGE(STATUS "Using builtin JSonCPP")
+  set (domoticz_jsoncpp_SRCS
+       json/json_reader.cpp
+       json/json_value.cpp
+       json/json_writer.cpp
+  )
+ELSE(USE_BUILTIN_JSCONCPP)
+  MESSAGE(STATUS "Using external JSonCPP")
+  find_package(PkgConfig)
+  pkg_check_modules(JSONCPP jsoncpp)
+  IF(JSONCPP_FOUND)
+    INCLUDE_DIRECTORIES(${JSONCPP_INCLUDE_DIRS})
+    add_definitions(-DWITH_EXTERNAL_JSONCPP)
+    link_directories(${JSONCPP_LIBRARY_DIRS})
+    MESSAGE(STATUS "JSonCPP found at ${JSONCPP_INCLUDE_DIRS} and ${JSONCPP_LIBRARY_DIRS}")
+  ELSE(JSCONCPP_FOUND)
+    MESSAGE(FATAL_ERROR "JSonCPP not found but USE_BUILTIN_JSONCPP=NO")
+  ENDIF(JSONCPP_FOUND)
+ENDIF(USE_BUILTIN_JSONCPP)
+
 option(USE_PYTHON "Use Python for Plugins and Event-Scripts" YES)
 IF(USE_PYTHON)
   find_package(PythonInterp 3.4)
@@ -189,110 +227,10 @@ ENDIF (INCLUDE_SPI)
 
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
 
-# Macro for setting up precompiled headers. Usage:
-#
-#   add_precompiled_header(target header.h [FORCEINCLUDE])
-#
-# MSVC: A source file with the same name as the header must exist and
-# be included in the target (E.g. header.cpp).
-#
-# MSVC: Add FORCEINCLUDE to automatically include the precompiled
-# header file from every source file.
-#
-# GCC: The precompiled header is always automatically included from
-# every header file.
-MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
-  GET_FILENAME_COMPONENT(_inputWe ${_input} NAME_WE)
-  SET(pch_source ${_inputWe}.cpp)
-  FOREACH(arg ${ARGN})
-    IF(arg STREQUAL FORCEINCLUDE)
-      SET(FORCEINCLUDE ON)
-    ELSE(arg STREQUAL FORCEINCLUDE)
-      SET(FORCEINCLUDE OFF)
-    ENDIF(arg STREQUAL FORCEINCLUDE)
-  ENDFOREACH(arg)
-
-  IF(MSVC)
-    GET_TARGET_PROPERTY(sources ${_targetName} SOURCES)
-    SET(_sourceFound FALSE)
-    FOREACH(_source ${sources})
-      SET(PCH_COMPILE_FLAGS "")
-      IF(_source MATCHES \\.\(cc|cxx|cpp\)$)
-  GET_FILENAME_COMPONENT(_sourceWe ${_source} NAME_WE)
-  IF(_sourceWe STREQUAL ${_inputWe})
-    SET(PCH_COMPILE_FLAGS "${PCH_COMPILE_FLAGS} /Yc${_input}")
-    SET(_sourceFound TRUE)
-  ELSE(_sourceWe STREQUAL ${_inputWe})
-    SET(PCH_COMPILE_FLAGS "${PCH_COMPILE_FLAGS} /Yu${_input}")
-    IF(FORCEINCLUDE)
-      SET(PCH_COMPILE_FLAGS "${PCH_COMPILE_FLAGS} /FI${_input}")
-    ENDIF(FORCEINCLUDE)
-  ENDIF(_sourceWe STREQUAL ${_inputWe})
-  SET_SOURCE_FILES_PROPERTIES(${_source} PROPERTIES COMPILE_FLAGS "${PCH_COMPILE_FLAGS}")
-      ENDIF(_source MATCHES \\.\(cc|cxx|cpp\)$)
-    ENDFOREACH()
-    IF(NOT _sourceFound)
-      MESSAGE(FATAL_ERROR "A source file for ${_input} was not found. Required for MSVC builds.")
-    ENDIF(NOT _sourceFound)
-  ENDIF(MSVC)
-
-  IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-parentheses-equality -Wno-deprecated-declarations -Wno-tautological-compare -Wno-unused-value -Wno-comment -Wno-unsequenced -Wno-logical-op-parentheses -Wno-literal-conversion")
-  ENDIF()
-  IF(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-  ENDIF()
-  IF(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-  ENDIF()
-  IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-psabi")
-    #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-switch")
-    #ADD_DEFINITIONS( -Wall -O0 -ggdb )
-    #ADD_DEFINITIONS( -Wfatal-errors -Wformat=2 -Werror=format-security )
-
-    GET_FILENAME_COMPONENT(_name ${_input} NAME)
-    SET(_source "${CMAKE_CURRENT_SOURCE_DIR}/${_input}")
-    SET(_outdir "${CMAKE_CURRENT_BINARY_DIR}/${_name}.gch")
-    MAKE_DIRECTORY(${_outdir})
-    SET(_output "${_outdir}/.c++")
-
-    STRING(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" _flags_var_name)
-    # Strip out -Wl,… linker directives as they make GCC fail
-    STRING(REGEX REPLACE " -Wl,[^ ]*" " " _compiler_FLAGS " ${CMAKE_CXX_FLAGS} ${${_flags_var_name}}")
-
-    GET_DIRECTORY_PROPERTY(_directory_flags INCLUDE_DIRECTORIES)
-    FOREACH(item ${_directory_flags})
-      LIST(APPEND _compiler_FLAGS "-I${item}")
-    ENDFOREACH(item)
-
-    GET_DIRECTORY_PROPERTY(_directory_flags COMPILE_DEFINITIONS)
-    FOREACH(item ${_directory_flags})
-      LIST(APPEND _compiler_FLAGS "-D${item}")
-    ENDFOREACH(item)
-
-    SEPARATE_ARGUMENTS(_compiler_FLAGS)
-    MESSAGE("${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${_compiler_FLAGS} -x c++-header -c -o ${_output} ${_source}")
-    ADD_CUSTOM_COMMAND(
-      OUTPUT ${_output}
-      COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${_compiler_FLAGS} -x c++-header -c -o ${_output} ${_source}
-      DEPENDS ${_source} )
-    ADD_CUSTOM_TARGET(${_targetName}_gch DEPENDS ${_output})
-    ADD_DEPENDENCIES(${_targetName} ${_targetName}_gch)
-    SET_TARGET_PROPERTIES(${_targetName} PROPERTIES COMPILE_FLAGS "-include ${_name} -Winvalid-pch")
-    IF(USE_BUILTIN_LUA)
-        # Add -rdynamic linker flag for exporting functions which is mandatory to use external lua modules
-        SET_TARGET_PROPERTIES(${_targetName} PROPERTIES ENABLE_EXPORTS ON)
-    ENDIF(USE_BUILTIN_LUA)
-  ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-ENDMACRO()
-
 FIND_PROGRAM(GIT_EXECUTABLE git
   DOC "git command line client")
 
-
 include_directories(${CMAKE_SOURCE_DIR}/main)
-include_directories(${CMAKE_SOURCE_DIR}/tinyxpath)
 
 # a custom target that is always built
 ADD_CUSTOM_TARGET(revisiontag ALL)
@@ -322,8 +260,11 @@ main/localtime_r.cpp
 main/Logger.cpp
 main/LuaCommon.cpp
 main/LuaHandler.cpp
+main/LuaTable.cpp
 main/mainworker.cpp
 main/mosquitto_helper.cpp
+main/NotificationObserver.cpp
+main/NotificationSystem.cpp
 main/RFXNames.cpp
 main/Scheduler.cpp
 main/SignalHandler.cpp
@@ -383,6 +324,8 @@ hardware/EnOceanESP2.cpp
 hardware/EnOceanESP3.cpp
 hardware/EnphaseAPI.cpp
 hardware/Ec3kMeterTCP.cpp
+hardware/eVehicles/TeslaApi.cpp
+hardware/eVehicles/eVehicle.cpp
 hardware/EvohomeBase.cpp
 hardware/EvohomeRadio.cpp
 hardware/EvohomeScript.cpp
@@ -422,6 +365,7 @@ hardware/Nest.cpp
 hardware/NestOAuthAPI.cpp
 hardware/Netatmo.cpp
 hardware/HttpPoller.cpp
+hardware/OctoPrintMQTT.cpp
 hardware/OnkyoAVTCP.cpp
 hardware/OpenWeatherMap.cpp
 hardware/OpenWebNetTCP.cpp
@@ -526,9 +470,6 @@ webserver/request_parser.cpp
 webserver/server.cpp
 webserver/Websockets.cpp
 webserver/WebsocketHandler.cpp
-json/json_reader.cpp
-json/json_value.cpp
-json/json_writer.cpp
 tinyxpath/action_store.cpp
 tinyxpath/htmlutil.cpp
 tinyxpath/lex_util.cpp
@@ -546,7 +487,7 @@ tinyxpath/xpath_stack.cpp
 tinyxpath/xpath_static.cpp
 tinyxpath/xpath_syntax.cpp
 )
-add_executable(domoticz ${domoticz_SRCS})
+add_executable(domoticz ${domoticz_SRCS} ${domoticz_jsoncpp_SRCS})
 
 # explicitly say that the executable depends on the revisiontag
 add_dependencies(domoticz revisiontag)
@@ -736,7 +677,7 @@ else()
   message(STATUS "Not found telldus-core (telldus-core.h), not adding tellstick support")
 endif (TELLDUSCORE_INCLUDE)
 
-target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${MQTT_LIBRARIES} ${LUA_LIBRARIES} ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS} ${TELLDUS_LIBRARIES})
+target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${MQTT_LIBRARIES} ${LUA_LIBRARIES} ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS} ${TELLDUS_LIBRARIES} ${JSONCPP_LIBRARIES})
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(domoticz -lresolv)
@@ -750,7 +691,8 @@ ENDIF()
 
 option(USE_PRECOMPILED_HEADER "Use precompiled header feature to speed up build time " YES)
 if(USE_PRECOMPILED_HEADER)
-  ADD_PRECOMPILED_HEADER(domoticz "main/stdafx.h")
+  message(STATUS "Using precompiled headers")
+  target_precompile_headers(domoticz PRIVATE "main/stdafx.h")
 ENDIF(USE_PRECOMPILED_HEADER)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)

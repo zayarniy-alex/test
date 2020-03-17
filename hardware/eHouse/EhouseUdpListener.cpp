@@ -13,7 +13,10 @@
  */
 
 #include "stdafx.h"
+<<<<<<< HEAD
 #include "../../main/Logger.h"
+=======
+>>>>>>> development
 #include "globals.h"
 #include "status.h"
 
@@ -31,6 +34,7 @@
 #include "../hardwaretypes.h"
 #include "../../main/RFXtrx.h"
 #include "../../main/localtime_r.h"
+#include "../../main/Logger.h"
 #include "../../main/mainworker.h"
 #include "../../main/SQLHelper.h"
 unsigned char TESTTEST = 0;
@@ -1624,7 +1628,7 @@ void eHouseTCP::GetUDPNamesRS485(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10) 
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 		}
 	}
 
@@ -1769,7 +1773,7 @@ void eHouseTCP::GetUDPNamesLAN(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 		}
 	}
@@ -1797,7 +1801,7 @@ void eHouseTCP::GetUDPNamesLAN(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 		}
 	}
@@ -1920,7 +1924,7 @@ void eHouseTCP::GetUDPNamesCM(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 		}
 	}
@@ -1946,7 +1950,7 @@ void eHouseTCP::GetUDPNamesCM(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 		}
 	}
@@ -2079,7 +2083,7 @@ void eHouseTCP::GetUDPNamesPRO(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 			if (strlen(PGMs) > 400) break;
 		}
@@ -2109,7 +2113,7 @@ void eHouseTCP::GetUDPNamesPRO(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 			if (strlen(PGMs) > 400) break;
 		}
@@ -2141,7 +2145,7 @@ void eHouseTCP::GetUDPNamesPRO(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 			if (strlen(PGMs) > 400) break;
 		}
@@ -2174,7 +2178,7 @@ void eHouseTCP::GetUDPNamesPRO(unsigned char *data, int nbytes)
 #ifdef UNLIMITED_PGM
 			if (k <= 10)
 #endif
-				strncat(PGMs, tmp, strlen(tmp));
+				strcat(PGMs, tmp);
 
 			if (strlen(PGMs) > 400) break;
 		}
